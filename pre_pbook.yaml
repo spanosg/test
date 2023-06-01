@@ -1,0 +1,46 @@
+- name: pre playbook
+  hosts: localhost
+  vars:
+    playbook_absoluteName: "{{ (lookup('file', '/proc/self/cmdline') | regex_replace('\u0000',' ')).split() | select('match','^.*[.]ya?ml$') | list | first }}"
+    playbook_baseName: "{{ playbook_absoluteName | basename }}"
+    readme_file: "/home/ansible/AnsibleRun_{{ ansible_facts.fqdn }}_{{ ansible_date_time.date }}.txt"
+
+  tasks:
+  - name: put playbook filename to variable
+    set_fact:
+      pbook_fname: "{{ playbook_dir }}/{{ playbook_baseName }}"
+  - name: show PBOOK FNAME
+    debug:
+      msg: "{{ pbook_fname }}"
+
+  - name: get hostname
+    command: uname -n
+    register: hname
+  
+  - name: add hostname to a var
+    set_fact: 
+      ans_hostname: "{{ hname.stdout_lines }}"
+
+  - name: set playbook start date
+    command: date
+    register: start_date
+  - name: add date to var
+    set_fact:
+      ans_start_date: "{{ start_date.stdout_lines }}"
+
+  - name: add variables to ansible run  file
+    shell: echo "{{ item }}" >> "{{ readme_file }}"
+    loop:
+    - "   "
+    - "---------------------------------------------------------------------"
+    - "{{ ans_start_date }}"
+    - "- Ansible Host:  {{ ans_hostname }}"
+    - "- Playbook filename: {{ pbook_fname }}"
+    - "   "
+
+  - name: copy metadata to clients
+    copy:
+      src: "{{ readme_file }}"
+      dest: "{{ readme_file }}"
+    delegate_to: "{{ item }}"
+    loop: "{{ groups.ora }}"

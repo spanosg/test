@@ -1,0 +1,8 @@
+- name: import pre playbook
+  import_playbook: pre_pbook.yaml
+
+- name: Run main playbook
+  import_playbook: main.yaml
+
+- name: import post playbook
+  import_playbook: post_pbook.yaml
